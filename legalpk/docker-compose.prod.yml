@@ -1,0 +1,38 @@
+version: "3.9"
+
+# Production overrides – layer on top of docker-compose.yml:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+services:
+  backend:
+    build:
+      target: production
+    command: >
+      gunicorn backend.app.main:app
+      -k uvicorn.workers.UvicornWorker
+      -w 4
+      -b 0.0.0.0:8000
+      --timeout 120
+      --access-logfile -
+      --error-logfile -
+    environment:
+      DEBUG: "false"
+      APP_ENV: production
+
+  worker:
+    build:
+      target: production
+    command: celery -A backend.app.workers.celery_app worker --concurrency=8 --loglevel=warning
+
+  scheduler:
+    build:
+      target: production
+    command: celery -A backend.app.workers.celery_app beat --loglevel=warning
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infrastructure/docker/Dockerfile.frontend
+      target: production
+    ports:
+      - "3001:80"

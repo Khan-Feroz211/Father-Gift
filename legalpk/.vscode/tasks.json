@@ -1,0 +1,115 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start All Services",
+      "type": "shell",
+      "command": "bash .devcontainer/start-services.sh",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend FastAPI",
+      "type": "shell",
+      "command": "source backend/.venv/bin/activate && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend Vite (port 3001)",
+      "type": "shell",
+      "command": "cd frontend && npm run dev -- --host 0.0.0.0 --port 3001",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Celery Worker",
+      "type": "shell",
+      "command": "source backend/.venv/bin/activate && celery -A backend.app.workers.celery_app worker --concurrency=2 --loglevel=info",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Celery Beat",
+      "type": "shell",
+      "command": "source backend/.venv/bin/activate && celery -A backend.app.workers.celery_app beat --loglevel=info",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Celery Flower (port 5555)",
+      "type": "shell",
+      "command": "source backend/.venv/bin/activate && celery -A backend.app.workers.celery_app flower --port=5555",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "source backend/.venv/bin/activate && cd backend && pytest --cov=app --cov-report=term-missing -v",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend Build",
+      "type": "shell",
+      "command": "cd frontend && npm run build",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend Lint",
+      "type": "shell",
+      "command": "source backend/.venv/bin/activate && ruff check backend/app && black --check backend/app",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "View All Logs",
+      "type": "shell",
+      "command": "tail -f /tmp/legalpk_backend.log /tmp/legalpk_frontend.log /tmp/legalpk_celery.log /tmp/legalpk_beat.log /tmp/legalpk_flower.log",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

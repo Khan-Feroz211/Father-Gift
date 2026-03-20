@@ -1,0 +1,58 @@
+[build]
+builder = "nixpacks"
+
+[[services]]
+name = "legalpk-backend"
+source = "backend"
+
+[services.build]
+dockerfilePath = "infrastructure/docker/Dockerfile.backend"
+dockerfileTarget = "production"
+
+[services.deploy]
+startCommand = "gunicorn backend.app.main:app -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:$PORT --timeout 120"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "legalpk-worker"
+source = "backend"
+
+[services.build]
+dockerfilePath = "infrastructure/docker/Dockerfile.backend"
+dockerfileTarget = "production"
+
+[services.deploy]
+startCommand = "celery -A backend.app.workers.celery_app worker --concurrency=4 --loglevel=warning"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "legalpk-scheduler"
+source = "backend"
+
+[services.build]
+dockerfilePath = "infrastructure/docker/Dockerfile.backend"
+dockerfileTarget = "production"
+
+[services.deploy]
+startCommand = "celery -A backend.app.workers.celery_app beat --loglevel=warning"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "legalpk-frontend"
+source = "frontend"
+
+[services.build]
+dockerfilePath = "../infrastructure/docker/Dockerfile.frontend"
+dockerfileTarget = "production"
+
+[services.deploy]
+startCommand = "nginx -g 'daemon off;'"
+healthcheckPath = "/"
+healthcheckTimeout = 120
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

@@ -1,0 +1,63 @@
+# ============================================================
+# Stage 1: base — common Python environment
+# ============================================================
+FROM python:3.11-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    libgomp1 \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ============================================================
+# Stage 2: deps — install Python dependencies
+# ============================================================
+FROM base AS deps
+
+COPY backend/requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# ============================================================
+# Stage 3: development — hot-reload with uvicorn
+# ============================================================
+FROM deps AS development
+
+COPY backend/requirements-dev.txt .
+RUN pip install -r requirements-dev.txt
+
+COPY . .
+
+RUN mkdir -p backend/data/faiss backend/data/uploads backend/data/generated
+
+EXPOSE 8000
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+# ============================================================
+# Stage 4: production — gunicorn with UvicornWorker
+# ============================================================
+FROM deps AS production
+
+COPY . .
+
+RUN mkdir -p backend/data/faiss backend/data/uploads backend/data/generated
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN chown -R appuser:appgroup /app
+USER appuser
+
+EXPOSE 8000
+CMD ["gunicorn", "backend.app.main:app", \
+     "-k", "uvicorn.workers.UvicornWorker", \
+     "-w", "4", \
+     "-b", "0.0.0.0:8000", \
+     "--timeout", "120", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]
