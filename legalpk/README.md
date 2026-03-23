@@ -68,6 +68,22 @@ docker compose up --build
 
 Open http://localhost:3001 in your browser.
 
+### Troubleshooting Docker Startup
+
+If `docker compose up --build` fails with a container name conflict (for example, `legalpk-redis-1` already exists), clean up and retry:
+
+```bash
+docker compose down --remove-orphans
+docker rm -f legalpk-redis-1 legalpk-db-1 2>/dev/null || true
+docker compose up --build -d
+```
+
+If backend logs show FAISS/NumPy compatibility warnings, the API can still boot and serve requests. Verify with:
+
+```bash
+curl http://localhost:8000/health
+```
+
 ### Manual / Codespace Setup
 
 ```bash

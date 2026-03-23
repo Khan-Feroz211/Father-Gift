@@ -3,8 +3,7 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Inches, Pt, RGBColor
-from docx.util import Cm
+from docx.shared import Cm, Inches, Pt, RGBColor
 
 
 def generate_docx(title: str, content: str, file_path: str) -> str:
