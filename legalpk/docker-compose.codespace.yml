@@ -1,0 +1,58 @@
+version: "3.9"
+
+# Codespace-optimised compose: only db + redis + a long-lived app container.
+# The Python venv and Node deps are installed by .devcontainer/setup.sh;
+# services are started by .devcontainer/start-services.sh.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: legalpk
+      POSTGRES_PASSWORD: legalpk
+      POSTGRES_DB: legalpk
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U legalpk -d legalpk"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: python:3.11-bullseye
+    restart: unless-stopped
+    volumes:
+      - ..:/workspace:cached
+    working_dir: /workspace/legalpk
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgresql+asyncpg://legalpk:legalpk@db:5432/legalpk
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:

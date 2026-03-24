@@ -1,0 +1,78 @@
+name: CD – Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy backend service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service legalpk-backend --detach
+        working-directory: legalpk
+
+      - name: Deploy worker service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service legalpk-worker --detach
+        working-directory: legalpk
+
+      - name: Deploy scheduler service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service legalpk-scheduler --detach
+        working-directory: legalpk
+
+      - name: Deploy frontend service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service legalpk-frontend --detach
+        working-directory: legalpk
+
+      - name: Wait for backend to be healthy
+        env:
+          RAILWAY_BACKEND_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+        run: |
+          echo "Waiting 30 seconds for services to spin up..."
+          sleep 30
+          MAX_TRIES=10
+          COUNT=0
+          until curl -sf "${RAILWAY_BACKEND_URL}/health" > /dev/null 2>&1; do
+            COUNT=$((COUNT + 1))
+            if [ "$COUNT" -ge "$MAX_TRIES" ]; then
+              echo "ERROR: Backend health check failed after ${MAX_TRIES} attempts"
+              exit 1
+            fi
+            echo "Health check attempt $COUNT/$MAX_TRIES failed, retrying in 15s..."
+            sleep 15
+          done
+          echo "✅ Backend is healthy at ${RAILWAY_BACKEND_URL}/health"
+
+      - name: Deployment summary
+        env:
+          RAILWAY_BACKEND_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+        run: |
+          echo "🚀 Deployment complete!"
+          echo "   Backend: ${RAILWAY_BACKEND_URL}"
+          echo "   Commit:  ${{ github.sha }}"
+          echo "   By:      ${{ github.actor }}"
