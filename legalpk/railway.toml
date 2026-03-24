@@ -1,9 +1,5 @@
-[build]
-builder = "nixpacks"
-
 [[services]]
 name = "legalpk-backend"
-source = "backend"
 
 [services.build]
 dockerfilePath = "infrastructure/docker/Dockerfile.backend"
@@ -18,7 +14,6 @@ restartPolicyMaxRetries = 3
 
 [[services]]
 name = "legalpk-worker"
-source = "backend"
 
 [services.build]
 dockerfilePath = "infrastructure/docker/Dockerfile.backend"
@@ -31,7 +26,6 @@ restartPolicyMaxRetries = 3
 
 [[services]]
 name = "legalpk-scheduler"
-source = "backend"
 
 [services.build]
 dockerfilePath = "infrastructure/docker/Dockerfile.backend"
